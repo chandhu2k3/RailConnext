@@ -3,7 +3,7 @@ import {createRoot} from "react-dom/client";
 import {BrowserRouter, Routes, Route, Link, useNavigate, useLocation, useParams} from "react-router-dom";
 import "./styles.css";
 
-const journeys = [
+const primaryJourneys = [
   {id:"hyd-blr-kochi", origin:"Hyderabad", destination:"Kochi", risk:"LOW", buffer:95, duration:"14h 10m", wait:"1h 35m", cost:1460, reliability:92, connections:1,
    legs:[{train:"12785",name:"Kacheguda – Bengaluru Exp",from:"Hyderabad",to:"Bengaluru",dep:"08:20",arr:"14:10",platform:"5",reliability:94},{train:"12677",name:"KSR Bengaluru – Ernakulam Exp",from:"Bengaluru",to:"Kochi",dep:"15:45",arr:"22:30",platform:"2",reliability:91}],
    reason:"1h 35m buffer with strong arrival reliability. Comfortable margin for a normal platform transfer.", threshold:42},
@@ -15,11 +15,44 @@ const journeys = [
    reason:"Only 28m are available and Train 1 has a higher delay pattern. This is a prototype estimate, not a live prediction.", threshold:12},
   {id:"hyd-pune-kochi", origin:"Hyderabad", destination:"Kochi", risk:"MODERATE", buffer:70, duration:"17h 05m", wait:"1h 10m", cost:1680, reliability:84, connections:1,
    legs:[{train:"17014",name:"Hyderabad – Pune Exp",from:"Hyderabad",to:"Pune",dep:"05:50",arr:"15:20",platform:"1",reliability:86},{train:"22150",name:"Pune – Ernakulam Exp",from:"Pune",to:"Kochi",dep:"16:30",arr:"22:55",platform:"7",reliability:82}],
-   reason:"1h 10m buffer gives some recovery room, but the first leg has a longer route and moderate historical/mock reliability.", threshold:30},
+   reason:"1h 10m buffer gives some recovery room, but the first leg has a longer route and moderate mock reliability.", threshold:30},
   {id:"hyd-blr-kochi-late", origin:"Hyderabad", destination:"Kochi", risk:"LOW", buffer:125, duration:"15h 25m", wait:"2h 05m", cost:1390, reliability:95, connections:1,
    legs:[{train:"12785",name:"Kacheguda – Bengaluru Exp",from:"Hyderabad",to:"Bengaluru",dep:"10:00",arr:"15:10",platform:"5",reliability:94},{train:"16527",name:"Yasvantpur – Kannur Exp",from:"Bengaluru",to:"Kochi",dep:"17:15",arr:"23:25",platform:"2",reliability:96}],
    reason:"A larger buffer reduces connection pressure. Trade-off: longer waiting time at Bengaluru.", threshold:72}
 ];
+
+// Intentionally limited demo coverage: four origins and four destinations.
+// Every route below is mock data so the prototype feels functional without pretending to be live railway data.
+const demoRouteConfigs = [
+  ["Hyderabad","Bengaluru","Vijayawada","06:40","12:10","13:05","19:20","LOW",75,"11h 40m",55,1280,90,"12706","Deccan Link Exp","12675","Coastal Link Exp",45],
+  ["Hyderabad","Pune","Solapur","05:30","12:35","13:30","20:15","MODERATE",55,"14h 45m",55,1340,84,"17018","Hyderabad – Solapur Exp","12115","Siddheshwar Exp",25],
+  ["Hyderabad","Visakhapatnam","Vijayawada","07:00","12:20","13:10","20:05","LOW",50,"13h 05m",50,1180,89,"12718","Godavari Link Exp","12842","East Coast Exp",35],
+  ["Mumbai","Kochi","Pune","06:15","09:40","10:30","23:05","MODERATE",50,"16h 50m",50,1720,83,"22102","Mumbai – Pune Exp","11097","Coastal Express",25],
+  ["Mumbai","Bengaluru","Pune","05:45","09:20","10:10","23:15","LOW",50,"17h 30m",50,1640,91,"12125","Deccan Queen Link","16576","Bengaluru Express",40],
+  ["Mumbai","Pune","Lonavala","08:00","10:10","10:50","13:15","LOW",40,"5h 15m",40,720,94,"11010","Mumbai – Pune Exp","12125","Pune Intercity",30],
+  ["Mumbai","Visakhapatnam","Nagpur","06:20","17:10","18:00","10:25","MODERATE",50,"28h 05m",50,2260,81,"12105","Vidarbha Link Exp","12808","Visakha Express",30],
+  ["Delhi","Kochi","Bhopal","05:20","13:45","14:35","22:10","MODERATE",50,"40h 50m",50,2450,82,"12616","Grand Central Exp","12626","Southern Link Exp",30],
+  ["Delhi","Bengaluru","Bhopal","06:10","15:05","16:00","21:30","LOW",55,"39h 20m",55,2320,90,"12628","Central Link Exp","12650","Karnataka Link Exp",40],
+  ["Delhi","Pune","Bhopal","07:00","14:30","15:20","21:10","MODERATE",50,"14h 10m",50,1980,85,"12156","Bhopal Link Exp","12124","Deccan Link Exp",30],
+  ["Delhi","Visakhapatnam","Nagpur","06:30","17:20","18:15","07:05","HIGH",55,"24h 35m",55,2140,76,"12410","Central Corridor Exp","12804","East Coast Exp",20],
+  ["Chennai","Kochi","Coimbatore","06:30","13:00","13:50","20:45","LOW",50,"14h 15m",50,1180,93,"12675","Chennai – Coimbatore Exp","12679","Coastal Link Exp",40],
+  ["Chennai","Bengaluru","Katpadi","07:15","11:20","12:05","18:45","LOW",45,"11h 30m",45,980,94,"16021","Kaveri Link Exp","16527","Bengaluru Express",35],
+  ["Chennai","Pune","Bengaluru","05:50","13:10","14:05","23:30","MODERATE",55,"17h 40m",55,1540,84,"12639","Chennai – Bengaluru Exp","11014","Deccan Link Exp",28],
+  ["Chennai","Visakhapatnam","Vijayawada","06:10","12:30","13:20","20:25","LOW",50,"14h 15m",50,1260,91,"12842","Coromandel Link Exp","12718","Godavari Exp",40]
+];
+
+function makeDemoJourney(r,i){
+ const [origin,destination,hub,dep1,arr1,dep2,arr2,risk,buffer,duration,wait,cost,reliability,train1,name1,train2,name2,threshold]=r;
+ return {id:`demo-${origin.slice(0,3).toLowerCase()}-${destination.slice(0,3).toLowerCase()}-${i}`,origin,destination,risk,buffer,duration,wait:`${wait}m`,cost,reliability,connections:1,
+  legs:[{train:train1,name:name1,from:origin,to:hub,dep:dep1,arr:arr1,platform:String((i%7)+1),reliability:Math.max(70,reliability+2)},{train:train2,name:name2,from:hub,to:destination,dep:dep2,arr:arr2,platform:String((i%6)+2),reliability:reliability}],
+  reason:risk==="LOW"?`${buffer}m buffer with strong mock reliability. Comfortable margin for this prototype connection.`:risk==="MODERATE"?`${buffer}m buffer leaves some recovery room, but a meaningful delay could reduce the margin.`:`Only ${buffer}m are available, so a delay on Train 1 could make this connection difficult. Prototype estimate only.`,threshold};
+}
+
+const extraJourneys = demoRouteConfigs.map(makeDemoJourney);
+const journeys = [...primaryJourneys, ...extraJourneys];
+const originStations = ["Hyderabad","Mumbai","Delhi","Chennai"];
+const destinationStations = ["Kochi","Bengaluru","Pune","Visakhapatnam"];
+const stations = [...originStations,...destinationStations];
 
 const backups = [
   {train:"16528", name:"Bengaluru – Kannur Exp", dep:"17:10", arr:"23:50", cost:220, extra:"1h 20m", risk:"LOW", status:"Seats likely"},
@@ -34,7 +67,6 @@ const recovery = [
   {title:"Onward travel assistance", detail:"Get help evaluating and securing the next leg.", price:"From ₹49", tag:"ASSIST"}
 ];
 
-const stations = ["Hyderabad","Secunderabad","Bengaluru","Chennai","Mumbai","Delhi","Kochi","Pune","Vijayawada","Bhopal","Nagpur","Visakhapatnam"];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://waasemfgmevcuvadhhaa.supabase.co";
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable__ZmcTDIow2_W0YzpbPMdpw_9t19uDD5";
@@ -122,32 +154,34 @@ function Landing(){
 
 function Search(){
  const nav=useNavigate(), params=new URLSearchParams(useLocation().search);
- const [from,setFrom]=useState(params.get("demo")?"Hyderabad":""), [to,setTo]=useState(params.get("demo")?"Kochi":""), [date,setDate]=useState("2026-09-25"), [connections,setConnections]=useState("1"), [travellers,setTravellers]=useState("1");
- const submit=(e)=>{e.preventDefault();trackEvent("search_started",{origin:from,destination:to});trackEvent("search_completed",{origin:from,destination:to,date,number_of_connections:connections});nav(`/results?from=${encodeURIComponent(from||"Hyderabad")}&to=${encodeURIComponent(to||"Kochi")}`)};
- return <div className="container page"><div className="page-intro"><div><div className="eyebrow">JOURNEY SEARCH</div><h1>Build the connection.</h1><p>Tell us where you're starting, where you're going and how much transfer risk you're comfortable with.</p></div><span className="demo-note">Demo data · No live availability</span></div>
+ const [from,setFrom]=useState(params.get("demo")?"Hyderabad":params.get("from")||""), [to,setTo]=useState(params.get("demo")?"Kochi":params.get("to")||""), [date,setDate]=useState("2026-09-25"), [connections,setConnections]=useState("1"), [travellers,setTravellers]=useState("1");
+ const submit=(e)=>{e.preventDefault(); if(!from||!to)return; trackEvent("search_started",{origin:from,destination:to});trackEvent("search_completed",{origin:from,destination:to,date,number_of_connections:connections});nav(`/results?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)};
+ return <div className="container page"><div className="page-intro"><div><div className="eyebrow">JOURNEY SEARCH</div><h1>Build the connection.</h1><p>Choose a route from our demo network and explore the connecting journey options.</p></div><span className="demo-note">Demo network · No live availability</span></div>
  <form className="search-panel" onSubmit={submit}>
-  <label>From<div className="input-wrap"><span>⌖</span><input list="stations" value={from} onChange={e=>{setFrom(e.target.value);trackEvent("origin_selected",{origin:e.target.value})}} placeholder="City or station"/></div></label>
-  <label>To<div className="input-wrap"><span>◎</span><input list="stations" value={to} onChange={e=>{setTo(e.target.value);trackEvent("destination_selected",{destination:e.target.value})}} placeholder="City or station"/></div></label>
+  <label>From<div className="input-wrap"><span>⌖</span><select value={from} onChange={e=>{setFrom(e.target.value);trackEvent("origin_selected",{origin:e.target.value})}}><option value="">Choose origin</option>{originStations.map(s=><option key={s}>{s}</option>)}</select></div></label>
+  <label>To<div className="input-wrap"><span>◎</span><select value={to} onChange={e=>{setTo(e.target.value);trackEvent("destination_selected",{destination:e.target.value})}}><option value="">Choose destination</option>{destinationStations.map(s=><option key={s}>{s}</option>)}</select></div></label>
   <label>Date<div className="input-wrap"><span>◷</span><input type="date" value={date} onChange={e=>{setDate(e.target.value);trackEvent("date_selected",{date:e.target.value})}}/></div></label>
   <label>Travellers<select value={travellers} onChange={e=>setTravellers(e.target.value)}><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
   <label>Connections<select value={connections} onChange={e=>setConnections(e.target.value)}><option value="1">1 connection</option><option value="2">Up to 2</option></select></label>
   <label>Flexibility<select><option>Flexible</option><option>Exact date</option><option>± 1 day</option></select></label>
-  <datalist id="stations">{stations.map(s=><option key={s} value={s}/>)}</datalist>
-  <button className="btn primary search-btn">Find Connections <span>→</span></button>
+  <button className="btn primary search-btn" disabled={!from||!to}>Find Connections <span>→</span></button>
  </form>
- <div className="popular"><div className="section-head compact"><div><div className="eyebrow">QUICK START</div><h2>Popular demo journeys</h2></div></div><div className="popular-grid">{[["Hyderabad","Kochi","1 connection"],["Mumbai","Kochi","1–2 connections"],["Delhi","Bengaluru","1 connection"],["Chennai","Pune","1 connection"]].map(x=><button key={x.join()} onClick={()=>{setFrom(x[0]);setTo(x[1]);trackEvent("cta_clicked",{cta:"popular_journey",from:x[0],to:x[1]})}}><b>{x[0]} → {x[1]}</b><span>{x[2]}</span></button>)}</div></div>
+ <div className="popular"><div className="section-head compact"><div><div className="eyebrow">QUICK START</div><h2>Popular demo journeys</h2></div></div><div className="popular-grid">{[["Hyderabad","Kochi","5 options"],["Mumbai","Bengaluru","1 connection"],["Delhi","Pune","1 connection"],["Chennai","Visakhapatnam","1 connection"]].map(x=><button key={x.join()} onClick={()=>{setFrom(x[0]);setTo(x[1]);trackEvent("cta_clicked",{cta:"popular_journey",from:x[0],to:x[1]})}}><b>{x[0]} → {x[1]}</b><span>{x[2]}</span></button>)}</div></div>
  </div>
 }
 
 function Results(){
- const nav=useNavigate(), [sort,setSort]=useState("risk"), [selected,setSelected]=useState([]);
+ const nav=useNavigate(), location=useLocation(), [sort,setSort]=useState("risk"), [selected,setSelected]=useState([]);
  const [filter,setFilter]=useState("ALL");
- const list=useMemo(()=>{let x=[...journeys]; if(filter!=="ALL")x=x.filter(j=>j.risk===filter); if(sort==="duration")x.sort((a,b)=>a.duration.localeCompare(b.duration)); if(sort==="cost")x.sort((a,b)=>a.cost-b.cost); if(sort==="buffer")x.sort((a,b)=>b.buffer-a.buffer); if(sort==="arrival")x.sort((a,b)=>a.legs.at(-1).arr.localeCompare(b.legs.at(-1).arr)); return x},[sort,filter]);
+ const params=new URLSearchParams(location.search), from=params.get("from")||"Hyderabad", to=params.get("to")||"Kochi";
+ const routeJourneys=journeys.filter(j=>j.origin===from&&j.destination===to);
+ const list=useMemo(()=>{let x=[...routeJourneys]; if(filter!=="ALL")x=x.filter(j=>j.risk===filter); if(sort==="duration")x.sort((a,b)=>a.duration.localeCompare(b.duration)); if(sort==="cost")x.sort((a,b)=>a.cost-b.cost); if(sort==="buffer")x.sort((a,b)=>b.buffer-a.buffer); if(sort==="arrival")x.sort((a,b)=>a.legs.at(-1).arr.localeCompare(b.legs.at(-1).arr)); return x},[routeJourneys,sort,filter]);
+ useEffect(()=>{trackEvent("results_viewed",{origin:from,destination:to,result_count:routeJourneys.length})},[from,to,routeJourneys.length]);
  const toggle=(id)=>{setSelected(s=>s.includes(id)?s.filter(x=>x!==id):s.length<3?[...s,id]:s);trackEvent("journey_compared",{journey_ids:[...selected,id].slice(0,3),number_of_options:Math.min(3,new Set([...selected,id]).size)})};
- return <div className="container page"><div className="page-intro"><div><div className="eyebrow">CONNECTION RESULTS</div><h1>Hyderabad <span className="muted">→</span> Kochi</h1><p>5 complete combinations · Prototype estimates · 25 Sep 2026</p></div><button className="btn ghost small" onClick={()=>nav("/search")}>Edit search</button></div>
+ return <div className="container page"><div className="page-intro"><div><div className="eyebrow">CONNECTION RESULTS</div><h1>{from} <span className="muted">→</span> {to}</h1><p>{routeJourneys.length} demo connection {routeJourneys.length===1?"option":"options"} · Prototype estimates · 25 Sep 2026</p></div><button className="btn ghost small" onClick={()=>nav("/search")}>Edit search</button></div>
  <div className="result-toolbar"><div className="filters"><button className={filter==="ALL"?"selected":""} onClick={()=>{setFilter("ALL");trackEvent("connection_filter_used",{filter:"ALL"})}}>All</button>{["LOW","MODERATE","HIGH"].map(f=><button className={filter===f?"selected":""} key={f} onClick={()=>{setFilter(f);trackEvent("connection_filter_used",{filter:f})}}>{f}</button>)}</div><label>Sort <select value={sort} onChange={e=>{setSort(e.target.value);trackEvent("connection_sorted",{sort:e.target.value})}}><option value="risk">Lowest risk</option><option value="duration">Shortest journey</option><option value="cost">Lowest cost</option><option value="buffer">Best connection</option><option value="arrival">Earliest arrival</option></select></label></div>
  <div className="prototype-disclaimer"><b>Connection Risk — Prototype Estimate</b><span>Uses mock buffer, reliability and transfer factors. It is not a live railway prediction.</span></div>
- <div className="results-list">{list.map(j=><JourneyCard key={j.id} j={j} checked={selected.includes(j.id)} onCompare={()=>toggle(j.id)} onOpen={()=>{trackEvent("journey_opened",{journey_id:j.id,risk_level:j.risk,connection_buffer:j.buffer,total_duration:j.duration,estimated_cost:j.cost});nav("/journey/"+j.id)}}/>)}</div>
+ {list.length===0?<div className="empty-state"><div className="eyebrow">LIMITED DEMO COVERAGE</div><h2>No connection options for this route yet.</h2><p>RailConnect currently covers a small set of demo routes. Try another combination from the Plan page.</p><button className="btn primary" onClick={()=>nav("/search")}>Choose another route →</button></div>:<div className="results-list">{list.map(j=><JourneyCard key={j.id} j={j} checked={selected.includes(j.id)} onCompare={()=>toggle(j.id)} onOpen={()=>{trackEvent("journey_opened",{journey_id:j.id,risk_level:j.risk,connection_buffer:j.buffer,total_duration:j.duration,estimated_cost:j.cost});nav("/journey/"+j.id)}}/>)}</div>}
  {selected.length>0 && <div className="compare-dock"><span>{selected.length}/3 selected for comparison</span><button className="btn primary" disabled={selected.length<2} onClick={()=>nav("/compare?ids="+selected.join(","))}>Compare journeys →</button></div>}
  </div>
 }
@@ -165,7 +199,17 @@ function JourneyCard({j,checked,onCompare,onOpen}){
 
 function JourneyDetails(){
  const {id}=useParams(), nav=useNavigate(), j=journeys.find(x=>x.id===id)||journeys[0];
+ const [support,setSupport]=useState("basic"), [wtp,setWtp]=useState(null), [purchaseIntent,setPurchaseIntent]=useState(null), [bookingConfirmed,setBookingConfirmed]=useState(false);
+ const supportOptions=[
+  {id:"free",price:0,name:"Monitor + backup options",desc:"See delays, connection risk and alternative onward options at no cost.",best:"Free for every traveller — you choose what to do",features:["Delay status","Connection risk & buffer updates","Backup / alternative options","Journey monitoring"]},
+  {id:"basic",price:49,name:"Secure my next leg",desc:"Get help securing an onward option before a connection becomes a problem.",best:"For travellers who want the next leg taken care of",features:["Everything in Free","Onward option selection help","Booking / reconfirmation guidance","Next-leg support"]},
+  {id:"recovery",price:99,name:"Recovery support",desc:"If your connection becomes risky or is missed, get help securing a replacement onward journey.",best:"For trips where a missed connection would be costly",features:["Everything in Basic","Missed-connection recovery","Replacement journey support","Onward journey secured with assistance"]},
+  {id:"priority",price:199,name:"Priority onward journey",desc:"Get higher-touch support focused on securing your onward journey when disruption happens.",best:"For travellers who want the most hands-on support",features:["Everything in Recovery","Priority assistance","Faster recovery coordination","Priority onward travel support"]}
+ ];
+ const selectedSupport=supportOptions.find(x=>x.id===support)||supportOptions[1];
  const save=()=>{localStorage.setItem("rc_saved",j.id);trackEvent("journey_saved",{journey_id:j.id});nav("/my-journey")};
+ const chooseSupport=(id)=>{setSupport(id);const option=supportOptions.find(x=>x.id===id);trackEvent("assistance_option_selected",{journey_id:j.id,option:id,price:option.price});if(option.price>0)trackEvent("wtp_amount_selected",{journey_id:j.id,price_option:option.price,source:"booking_flow"})};
+ const continueBooking=()=>{trackEvent("booking_started",{journey_id:j.id,support_option:support,assistance_price:selectedSupport.price});setBookingConfirmed(true);};
  return <div className="container page"><div className="breadcrumb"><Link to="/results">← Results</Link><span>/</span><span>Journey details</span></div>
  <div className="detail-head"><div><div className="eyebrow">JOURNEY {j.id.toUpperCase()}</div><h1>{j.origin} → {j.destination}</h1><p>25 September 2026 · 1 connection · Demo schedule</p></div><RiskBadge risk={j.risk}/></div>
  <div className="detail-grid"><section className="timeline-card"><div className="card-heading"><div><span className="eyebrow">TIMELINE</span><h2>One journey, one view.</h2></div><span className="demo-note">Mock platforms</span></div>
@@ -174,10 +218,22 @@ function JourneyDetails(){
  <div className="timeline-row"><div className="timeline-time"><b>{j.legs[1].arr}</b><span>Arrival</span></div><div className="timeline-dot"></div><div><span className="eyebrow">DESTINATION</span><h3>Arrive in {j.destination}</h3><p>Journey complete.</p></div></div></section>
  <aside className="side-stack"><div className="info-card"><span className="eyebrow">RISK EXPLANATION</span><h3>{j.risk} connection risk</h3><p>{j.reason}</p><div className="risk-meter"><i style={{width:(j.risk==="LOW"?88:j.risk==="MODERATE"?58:28)+"%"}}></i></div><small>Prototype estimate · not statistically validated</small></div>
  <div className="info-card"><span className="eyebrow">DELAY TOLERANCE</span><h3>{j.threshold} min</h3><p>Approximate delay margin before this connection moves into high-risk territory.</p></div>
- <button className="btn primary wide" onClick={save}>Save & Monitor Journey →</button>
  <button className="btn ghost wide" onClick={()=>{trackEvent("risk_details_viewed",{journey_id:j.id,risk_level:j.risk});}}>I understand the risk</button>
  </aside></div>
- <section className="backup-section"><div className="section-head compact"><div><div className="eyebrow">PROACTIVE PLANNING</div><h2>Don't wait for the miss.</h2></div><p>Explore onward trains now so a delay doesn't force you to start searching from scratch.</p></div><button className="btn dark" onClick={()=>{trackEvent("backup_options_clicked",{journey_id:j.id});nav("/my-journey?backup=1")}}>Show Backup Options →</button></section>
+
+ <section className="booking-panel">
+  <div className="booking-head"><div><span className="eyebrow">BEFORE YOU BOOK</span><h2>Choose how much onward-journey support you want.</h2><p>Backup options are free for everyone. Paid plans add assistance to secure and recover your onward journey. This is a prototype; no payment is taken.</p></div><span className="booking-step">1 · SUPPORT</span></div>
+  <div className="support-grid">{supportOptions.map(o=><button key={o.id} className={"support-option "+(support===o.id?"selected":"")} onClick={()=>chooseSupport(o.id)}><div className="support-top"><div><span className="support-label">{o.id==="free"?"INCLUDED":"OPTIONAL"}</span><h3>{o.name}</h3></div><strong>{o.price===0?"Free":"₹"+o.price}</strong></div><p>{o.desc}</p><div className="support-best">{o.best}</div><ul>{o.features.map(f=><li key={f}>✓ {f}</li>)}</ul></button>)}</div>
+  <div className="booking-validation">
+   <div><span className="eyebrow">QUICK VALIDATION</span><h3>Would you pay for this support?</h3><p>Your answer helps us test whether this feature is valuable. No payment is taken.</p></div>
+   <div className="wtp-booking-row">{[49,99,199].map(p=><button className={wtp===p?"chosen":""} key={p} onClick={()=>{setWtp(p);setSupport(p===49?"basic":p===99?"recovery":"priority");trackEvent("wtp_amount_selected",{journey_id:j.id,price_option:p,source:"booking_validation"})}}>₹{p}<small>{p===49?"secure next leg":p===99?"recover onward journey":"priority support"}</small></button>)}<button className={wtp===0?"chosen":""} onClick={()=>{setWtp(0);trackEvent("wtp_amount_selected",{journey_id:j.id,price_option:0,source:"booking_validation"})}}>₹0<small>I'd use free only</small></button></div>
+   <div className="purchase-intent-row"><span>Would you use it on a real trip?</span>{["YES","MAYBE","NO"].map(x=><button className={purchaseIntent===x?"selected":""} key={x} onClick={()=>{setPurchaseIntent(x);trackEvent("purchase_intent",{journey_id:j.id,response:x,source:"booking_flow"})}}>{x}</button>)}</div>
+  </div>
+  <div className="booking-summary"><div><span className="eyebrow">YOUR BOOKING</span><h3>{j.origin} → {j.destination}</h3><p>Estimated fare ₹{j.cost.toLocaleString()} · {j.duration} · {j.risk} connection risk</p><small>Support: <b>{selectedSupport.name}</b>{selectedSupport.price?` · ₹${selectedSupport.price}`:" · Included"}</small></div><button className="btn primary" onClick={continueBooking}>Continue to booking →</button></div>
+  {bookingConfirmed&&<div className="booking-confirmed"><div><span>✓</span><div><b>Booking flow started</b><p>This prototype has recorded the journey, support choice and purchase-intent response. No payment or real ticket booking was made.</p></div></div><button className="btn dark small" onClick={save}>Save & Monitor Journey</button></div>}
+ </section>
+
+ <section className="backup-section"><div className="section-head compact"><div><div className="eyebrow">FREE FOR EVERYONE</div><h2>See backup options before you book.</h2></div><p>Explore alternative trains and routes now. If you want RailConnect to help secure the onward journey, choose a paid support tier above.</p></div><button className="btn dark" onClick={()=>{trackEvent("backup_options_clicked",{journey_id:j.id});nav("/my-journey?backup=1")}}>Show Free Backup Options →</button></section>
  </div>
 }
 
