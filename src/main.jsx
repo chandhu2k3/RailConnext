@@ -238,6 +238,7 @@ function JourneyDetails(){
 }
 
 function Compare(){
+ const nav=useNavigate();
  const ids=new URLSearchParams(useLocation().search).get("ids")?.split(",")||journeys.slice(0,3).map(x=>x.id);
  const selected=ids.map(id=>journeys.find(j=>j.id===id)).filter(Boolean).slice(0,3);
  useEffect(()=>trackEvent("connection_results_viewed",{count:selected.length}),[]);
