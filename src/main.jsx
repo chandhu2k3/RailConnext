@@ -199,7 +199,7 @@ function JourneyCard({j,checked,onCompare,onOpen}){
 
 function JourneyDetails(){
  const {id}=useParams(), nav=useNavigate(), j=journeys.find(x=>x.id===id)||journeys[0];
- const [support,setSupport]=useState("basic"), [wtp,setWtp]=useState(null), [purchaseIntent,setPurchaseIntent]=useState(null), [bookingConfirmed,setBookingConfirmed]=useState(false);
+ const [support,setSupport]=useState("basic"), [wtp,setWtp]=useState(null), [purchaseIntent,setPurchaseIntent]=useState(null), [bookingConfirmed,setBookingConfirmed]=useState(false), [riskAcknowledged,setRiskAcknowledged]=useState(false);
  const supportOptions=[
   {id:"free",price:0,name:"Monitor + backup options",desc:"See delays, connection risk and alternative onward options at no cost.",best:"Free for every traveller — you choose what to do",features:["Delay status","Connection risk & buffer updates","Backup / alternative options","Journey monitoring"]},
   {id:"basic",price:49,name:"Secure my next leg",desc:"Get help securing an onward option before a connection becomes a problem.",best:"For travellers who want the next leg taken care of",features:["Everything in Free","Onward option selection help","Booking / reconfirmation guidance","Next-leg support"]},
@@ -218,10 +218,10 @@ function JourneyDetails(){
  <div className="timeline-row"><div className="timeline-time"><b>{j.legs[1].arr}</b><span>Arrival</span></div><div className="timeline-dot"></div><div><span className="eyebrow">DESTINATION</span><h3>Arrive in {j.destination}</h3><p>Journey complete.</p></div></div></section>
  <aside className="side-stack"><div className="info-card"><span className="eyebrow">RISK EXPLANATION</span><h3>{j.risk} connection risk</h3><p>{j.reason}</p><div className="risk-meter"><i style={{width:(j.risk==="LOW"?88:j.risk==="MODERATE"?58:28)+"%"}}></i></div><small>Prototype estimate · not statistically validated</small></div>
  <div className="info-card"><span className="eyebrow">DELAY TOLERANCE</span><h3>{j.threshold} min</h3><p>Approximate delay margin before this connection moves into high-risk territory.</p></div>
- <button className="btn ghost wide" onClick={()=>{trackEvent("risk_details_viewed",{journey_id:j.id,risk_level:j.risk});}}>I understand the risk</button>
+ {!riskAcknowledged ? <button className="btn ghost wide" onClick={()=>{setRiskAcknowledged(true);trackEvent("risk_details_viewed",{journey_id:j.id,risk_level:j.risk});trackEvent("risk_understood",{journey_id:j.id,risk_level:j.risk});}}>Continue with this journey →</button> : <div className="risk-confirmed"><div><span>✓</span><div><b>Risk understood</b><p>{j.buffer} min connection buffer with about {j.threshold} min of delay tolerance before high risk.</p></div></div><button className="btn dark small" onClick={()=>document.getElementById("support-options")?.scrollIntoView({behavior:"smooth",block:"start"})}>Choose support →</button></div>}
  </aside></div>
 
- <section className="booking-panel">
+ <section className="booking-panel" id="support-options">
   <div className="booking-head"><div><span className="eyebrow">BEFORE YOU BOOK</span><h2>Choose how much onward-journey support you want.</h2><p>Backup options are free for everyone. Paid plans add assistance to secure and recover your onward journey. This is a prototype; no payment is taken.</p></div><span className="booking-step">1 · SUPPORT</span></div>
   <div className="support-grid">{supportOptions.map(o=><button key={o.id} className={"support-option "+(support===o.id?"selected":"")} onClick={()=>chooseSupport(o.id)}><div className="support-top"><div><span className="support-label">{o.id==="free"?"INCLUDED":"OPTIONAL"}</span><h3>{o.name}</h3></div><strong>{o.price===0?"Free":"₹"+o.price}</strong></div><p>{o.desc}</p><div className="support-best">{o.best}</div><ul>{o.features.map(f=><li key={f}>✓ {f}</li>)}</ul></button>)}</div>
   <div className="booking-validation">
@@ -245,7 +245,10 @@ function Compare(){
  <div className="compare-table-wrap"><table className="compare-table"><thead><tr><th>Journey</th>{selected.map(j=><th key={j.id}>{j.legs[0].to}<br/><small>via {j.legs[0].to}</small></th>)}</tr></thead><tbody>
  {[
  ["Departure",j=>j.legs[0].dep],["Arrival",j=>j.legs[1].arr],["Total duration",j=>j.duration],["Connection buffer",j=>j.buffer+" min"],["Waiting time",j=>j.wait],["Connections",j=>j.connections],["Estimated cost",j=>"₹"+j.cost.toLocaleString()],["Risk",j=><RiskBadge risk={j.risk}/>],["Reliability",j=>j.reliability+"%"]
- ].map(([label,get])=><tr key={label}><td><b>{label}</b></td>{selected.map(j=><td key={j.id}>{get(j)}</td>)}</tr>)}</tbody></table></div>
+ ].map(([label,get])=><tr key={label}><td><b>{label}</b></td>{selected.map(j=><td key={j.id}>{get(j)}</td>)}</tr>)}
+ <tr className="compare-action-row"><td><b>Next step</b><small>Continue with a journey</small></td>{selected.map(j=><td key={j.id}><button className="btn primary small compare-book-btn" onClick={()=>{trackEvent("journey_opened_from_compare",{journey_id:j.id});nav("/journey/"+j.id)}}>View &amp; book this journey →</button></td>)}</tr>
+ </tbody></table></div>
+ <div className="compare-next"><div><span className="eyebrow">READY TO CONTINUE?</span><h3>Choose a connection to see booking and onward-support options.</h3><p>You'll be taken to the journey page where you can review the route, choose free monitoring or paid onward-journey assistance, and continue the booking flow.</p></div><button className="btn dark" onClick={()=>{const j=selected[0]; if(j){trackEvent("journey_opened_from_compare",{journey_id:j.id});nav("/journey/"+j.id)}}} disabled={!selected.length}>Continue with first option →</button></div>
  <div className="tradeoff-note"><b>What this view is for</b><span>There is no universal best journey. A lower-cost route may have less buffer; a safer connection may mean more waiting. This prototype keeps those trade-offs visible so the traveller chooses.</span></div>
  </div>
 }
