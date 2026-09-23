@@ -209,7 +209,7 @@ function JourneyDetails(){
  const selectedSupport=supportOptions.find(x=>x.id===support)||supportOptions[1];
  const save=()=>{localStorage.setItem("rc_saved",j.id);trackEvent("journey_saved",{journey_id:j.id});nav("/my-journey")};
  const chooseSupport=(id)=>{setSupport(id);const option=supportOptions.find(x=>x.id===id);trackEvent("assistance_option_selected",{journey_id:j.id,option:id,price:option.price});if(option.price>0)trackEvent("wtp_amount_selected",{journey_id:j.id,price_option:option.price,source:"booking_flow"})};
- const continueBooking=()=>{trackEvent("booking_started",{journey_id:j.id,support_option:support,assistance_price:selectedSupport.price});setBookingConfirmed(true);};
+ const continueBooking=()=>{trackEvent("booking_started",{journey_id:j.id,support_option:support,assistance_price:selectedSupport.price});if(selectedSupport.price>0){trackEvent("payment_page_viewed",{journey_id:j.id,support_option:support,amount:selectedSupport.price});nav(`/payment/${j.id}?support=${support}`);}else{setBookingConfirmed(true);}};
  return <div className="container page"><div className="breadcrumb"><Link to="/results">← Results</Link><span>/</span><span>Journey details</span></div>
  <div className="detail-head"><div><div className="eyebrow">JOURNEY {j.id.toUpperCase()}</div><h1>{j.origin} → {j.destination}</h1><p>25 September 2026 · 1 connection · Demo schedule</p></div><RiskBadge risk={j.risk}/></div>
  <div className="detail-grid"><section className="timeline-card"><div className="card-heading"><div><span className="eyebrow">TIMELINE</span><h2>One journey, one view.</h2></div><span className="demo-note">Mock platforms</span></div>
@@ -326,6 +326,32 @@ function AnalyticsDashboard(){
  </div>
 }
 
+function PaymentPage(){
+ const {id}=useParams(), nav=useNavigate(), params=new URLSearchParams(useLocation().search), supportId=params.get("support")||"basic";
+ const j=journeys.find(x=>x.id===id)||journeys[0];
+ const options={
+  basic:{name:"Secure my next leg",price:49,desc:"Help securing the next onward leg, with booking / reconfirmation guidance."},
+  recovery:{name:"Recovery support",price:99,desc:"Help recovering and securing a replacement onward journey after disruption."},
+  priority:{name:"Priority onward journey",price:199,desc:"Higher-touch assistance focused on securing your onward journey."}
+ };
+ const plan=options[supportId]||options.basic;
+ const [method,setMethod]=useState("upi"),[paid,setPaid]=useState(false),[loading,setLoading]=useState(false);
+ const completePayment=()=>{setLoading(true);setTimeout(()=>{setLoading(false);setPaid(true);trackEvent("dummy_payment_completed",{journey_id:j.id,support_option:supportId,amount:plan.price,method});},450)};
+ if(paid)return <div className="container page payment-page"><div className="payment-success"><div className="success-icon">✓</div><span className="eyebrow">DEMO PAYMENT COMPLETE</span><h1>Your support is secured.</h1><p>The demo payment of <b>₹{plan.price}</b> was recorded successfully. No real payment was processed.</p><div className="payment-success-card"><div><span>JOURNEY</span><b>{j.origin} → {j.destination}</b></div><div><span>SUPPORT</span><b>{plan.name}</b></div><div><span>DEMO AMOUNT</span><b>₹{plan.price}</b></div></div><button className="btn primary" onClick={()=>nav(`/journey/${j.id}`)}>Continue to journey →</button></div></div>;
+ return <div className="container page payment-page"><div className="breadcrumb"><button className="text-link" onClick={()=>nav(`/journey/${j.id}`)}>← Back to journey</button><span>/</span><span>Demo payment</span></div>
+  <div className="payment-head"><div><span className="eyebrow">STEP 2 · DEMO CHECKOUT</span><h1>Secure your onward journey.</h1><p>This is a prototype payment page. No real payment or ticket purchase will happen.</p></div><span className="demo-pill">DEMO PAYMENT</span></div>
+  <div className="payment-grid"><section className="payment-card"><div className="payment-section-head"><div><span className="eyebrow">PAYMENT METHOD</span><h2>Choose how to pay</h2></div><strong>₹{plan.price}</strong></div>
+   <div className="payment-methods"><button className={method==="upi"?"selected":""} onClick={()=>setMethod("upi")}>UPI</button><button className={method==="card"?"selected":""} onClick={()=>setMethod("card")}>Card</button><button className={method==="netbanking"?"selected":""} onClick={()=>setMethod("netbanking")}>Net Banking</button></div>
+   {method==="upi"&&<div className="fake-fields"><label>UPI ID<input placeholder="name@upi"/></label><small>Demo field — any value is accepted.</small></div>}
+   {method==="card"&&<div className="fake-fields"><label>Card number<input placeholder="1234 5678 9012 3456" inputMode="numeric"/></label><div className="field-row"><label>Expiry<input placeholder="MM / YY"/></label><label>CVV<input placeholder="123"/></label></div><small>Demo field — no card details are sent anywhere.</small></div>}
+   {method==="netbanking"&&<div className="fake-fields"><label>Select bank<select defaultValue="demo"><option value="demo">Demo Bank</option><option>State Bank of India</option><option>HDFC Bank</option><option>ICICI Bank</option></select></label><small>Demo selection only.</small></div>}
+   <button className="btn primary wide payment-button" onClick={completePayment} disabled={loading}>{loading?"Processing demo payment…":`Pay ₹${plan.price} (Demo) →`}</button>
+   <div className="payment-note">🔒 <b>Demo only.</b> This prototype does not charge money, connect to a payment gateway, or book a real ticket.</div>
+  </section>
+  <aside className="payment-order"><span className="eyebrow">ORDER SUMMARY</span><h2>{plan.name}</h2><p>{plan.desc}</p><div className="order-route"><span>JOURNEY</span><b>{j.origin} → {j.destination}</b><small>{j.duration} · {j.risk} connection risk</small></div><div className="order-total"><span>Support</span><b>₹{plan.price}</b></div><div className="order-total grand"><span>Total</span><b>₹{plan.price}</b></div></aside></div>
+ </div>;
+}
+
 function Analytics(){
  const [verified,setVerified]=useState(sessionStorage.getItem("rc_admin_verified")==="1");
  return verified?<AnalyticsDashboard/>:<AdminLogin onSuccess={()=>setVerified(true)}/>;
@@ -337,6 +363,7 @@ function App(){
   <Route path="/search" element={<Shell><Search/></Shell>}/>
   <Route path="/results" element={<Shell><Results/></Shell>}/>
   <Route path="/journey/:id" element={<Shell><JourneyDetails/></Shell>}/>
+  <Route path="/payment/:id" element={<Shell><PaymentPage/></Shell>}/>
   <Route path="/compare" element={<Shell><Compare/></Shell>}/>
   <Route path="/my-journey" element={<Shell><MyJourney/></Shell>}/>
   <Route path="/recovery" element={<Shell><Recovery/></Shell>}/>
