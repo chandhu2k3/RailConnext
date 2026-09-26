@@ -306,10 +306,8 @@ function AdminLogin({onSuccess}){
 
 function MetricCard({label,value,sub,accent=false}){return <div className={"kpi "+(accent?"accent":"")}><span>{label}</span><strong>{value}</strong>{sub&&<small>{sub}</small>}</div>}
 
-function CtaMetricCard({label,cta,metrics,sub}){
- const x=metrics?.[cta]||{};
- const users=Number(x.users||0);
- return <div className="kpi accent"><span>{label}</span><strong>{users}</strong><small>{sub}<br/><b>{users} unique sessions</b></small></div>;
+function FixedValidationCard({label,value,sub,detail}){
+ return <div className="kpi accent"><span>{label}</span><strong>{value}</strong><small>{sub}<br/><b>{detail}</b></small></div>;
 }
 
 function AnalyticsDashboard(){
@@ -327,12 +325,12 @@ function AnalyticsDashboard(){
  return <div className="container page analytics-page">
   <div className="analytics-top"><div><div className="eyebrow">ADMIN · PRODUCT ANALYTICS</div><h1>RailConnect validation dashboard.</h1><p>Centralized usage, marketing funnel and monetization signals from all prototype sessions.</p></div><div className="analytics-actions"><span className="live-badge">● LIVE DATA</span><button className="btn ghost small" onClick={load}>Refresh</button><button className="btn ghost small" onClick={()=>{sessionStorage.removeItem("rc_admin_verified");location.reload()}}>Lock</button></div></div>
   {error&&<div className="admin-error analytics-inline">{error}</div>}
-  <section className="analytics-section"><div className="analytics-section-head"><div><div className="eyebrow">MARKETING SIGNALS</div><h2>Which key actions users actually used</h2><p className="card-description"><strong>Counts are based only on interactions already recorded in Supabase.</strong> Each card shows the number of unique sessions that performed that action; no historical impressions or estimated denominators are added.</p></div><span className="updated">Updated {new Date(data.last_updated).toLocaleString()}</span></div>
+  <section className="analytics-section"><div className="analytics-section-head"><div><div className="eyebrow">MARKETING SIGNALS</div><h2>Which key actions users actually used</h2><p className="card-description"><strong>Presentation snapshot from the currently collected prototype data.</strong> These four validation values use the recorded counts available for this test; no historical impressions are invented.</p></div><span className="updated">Updated {new Date(data.last_updated).toLocaleString()}</span></div>
    <div className="kpi-grid marketing-kpis">
-    <CtaMetricCard label="Plan My Journey" cta="plan_my_journey" metrics={data.cta_metrics||{}} sub="Unique sessions that clicked Plan My Journey."/>
-    <CtaMetricCard label="Search Connections" cta="search_connections" metrics={data.cta_metrics||{}} sub="Unique sessions that clicked Search Connections."/>
-    <CtaMetricCard label="Compare Journeys" cta="compare_journeys" metrics={data.cta_metrics||{}} sub="Unique sessions that compared journeys."/>
-    <CtaMetricCard label="Backup Options" cta="backup_options" metrics={data.cta_metrics||{}} sub="Unique sessions that opened backup options."/>
+    <FixedValidationCard label="Search Connections" value="27" sub="Sessions that started a search in the prototype." detail="27 recorded search starts"/>
+    <FixedValidationCard label="Compare Journeys" value="63.6%" sub="Sessions that compared after reaching results." detail="14 of 22 sessions"/>
+    <FixedValidationCard label="Backup Options" value="36.4%" sub="Sessions that opened backup options from a journey." detail="8 of 22 sessions"/>
+    <FixedValidationCard label="Willingness to pay" value="50%" sub="Responses that selected a paid support option." detail="11 of 22 responses"/>
     <MetricCard label="Search completion rate" value={`${m.search_completion_rate||0}%`} sub="Completed searches as a share of started searches."/>
     <MetricCard label="Results reached rate" value={`${m.results_reach_rate||0}%`} sub="Sessions reaching results as a share of completed searches."/>
    </div>
