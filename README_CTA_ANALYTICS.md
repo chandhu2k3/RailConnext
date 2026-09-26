@@ -1,26 +1,19 @@
-# RailConnect CTA Analytics — v13
+# RailConnect v15 — Eligible-session CTA analytics
 
-## What changed
-- Marketing Signals now uses CTA-level CTR for four tracked actions:
-  - Plan My Journey
-  - Search Connections
-  - Compare Journeys
-  - Backup Options
-- Each CTR is calculated as total CTA clicks / total CTA impressions × 100.
-- Search Completion Rate and Results Reached Rate remain dynamic from the existing analytics RPC.
-- Feature Engagement bars now scale relative to the highest current feature count, so smaller counts visually produce shorter bars.
-- Existing analytics data is not modified, deleted, or migrated.
+This version changes only the CTA analytics calculation and explanatory copy.
 
-## Important: run the additive SQL once
-The frontend calls a new read-only aggregation function: `public.get_railconnect_cta_metrics()`.
+## CTA engagement rates
+Each CTA rate is calculated dynamically as:
 
-Run `railconnect_cta_metrics.sql` once in the Supabase SQL Editor. The function only reads `analytics_events`; it does not update or delete any rows.
+unique sessions that used the CTA / unique eligible sessions × 100
 
-New CTA exposure/click events will be collected after this frontend is deployed. Historical CTA impressions are not fabricated.
+Eligible sessions are based on the existing event stream:
+- Plan My Journey: sessions with a home-page (`/`) page view.
+- Search Connections: sessions with a search-page (`/search`) page view.
+- Compare Journeys: sessions that reached `results_viewed`.
+- Backup Options: sessions that reached `journey_opened`.
 
-## CTA event names
-- `cta_exposed` with `props.cta = plan_my_journey`
-- `cta_exposed` with `props.cta = search_connections`
-- `cta_exposed` with `props.cta = compare_journeys`
-- `cta_exposed` with `props.cta = backup_options`
-- Existing/new `cta_clicked` events use the same CTA values.
+No historical impressions are fabricated, and no analytics event rows are updated or deleted.
+
+## Supabase
+Run `railconnect_cta_metrics_v15.sql` in the Supabase SQL Editor once. It replaces only the read-only CTA aggregation function.

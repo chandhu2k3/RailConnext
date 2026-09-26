@@ -308,7 +308,8 @@ function MetricCard({label,value,sub,accent=false}){return <div className={"kpi 
 
 function CtaMetricCard({label,cta,metrics,sub}){
  const x=metrics?.[cta]||{};
- return <div className="kpi accent"><span>{label}</span><strong>{Number(x.ctr||0)}%</strong><small>{sub} <br/><b>{Number(x.clicks||0)} clicks / {Number(x.impressions||0)} impressions</b></small></div>;
+ const users=Number(x.users||0), eligible=Number(x.eligible_sessions||0), rate=Number(x.rate||0);
+ return <div className="kpi accent"><span>{label}</span><strong>{rate}%</strong><small>{sub}<br/><b>{users} / {eligible} eligible sessions</b></small></div>;
 }
 
 function AnalyticsDashboard(){
@@ -326,12 +327,12 @@ function AnalyticsDashboard(){
  return <div className="container page analytics-page">
   <div className="analytics-top"><div><div className="eyebrow">ADMIN · PRODUCT ANALYTICS</div><h1>RailConnect validation dashboard.</h1><p>Centralized usage, marketing funnel and monetization signals from all prototype sessions.</p></div><div className="analytics-actions"><span className="live-badge">● LIVE DATA</span><button className="btn ghost small" onClick={load}>Refresh</button><button className="btn ghost small" onClick={()=>{sessionStorage.removeItem("rc_admin_verified");location.reload()}}>Lock</button></div></div>
   {error&&<div className="admin-error analytics-inline">{error}</div>}
-  <section className="analytics-section"><div className="analytics-section-head"><div><div className="eyebrow">MARKETING SIGNALS</div><h2>How key actions attract engagement</h2><p className="card-description"><strong>CTR is calculated separately for each CTA as total clicks ÷ total impressions × 100.</strong> Each CTA has its own impression and click count, so the rates are not mixed together.</p></div><span className="updated">Updated {new Date(data.last_updated).toLocaleString()}</span></div>
+  <section className="analytics-section"><div className="analytics-section-head"><div><div className="eyebrow">MARKETING SIGNALS</div><h2>How key actions attract engagement</h2><p className="card-description"><strong>Each rate compares unique sessions that used the action with the sessions that reached the relevant point where that action was available.</strong> This uses existing interaction data without inventing historical impressions.</p></div><span className="updated">Updated {new Date(data.last_updated).toLocaleString()}</span></div>
    <div className="kpi-grid marketing-kpis">
-    <CtaMetricCard label="Plan My Journey CTR" cta="plan_my_journey" metrics={data.cta_metrics||{}} sub="Clicks on Plan My Journey after it was shown."/>
-    <CtaMetricCard label="Search Connections CTR" cta="search_connections" metrics={data.cta_metrics||{}} sub="Clicks on Find Connections after it was shown."/>
-    <CtaMetricCard label="Compare Journeys CTR" cta="compare_journeys" metrics={data.cta_metrics||{}} sub="Clicks on Compare Journeys after the comparison CTA was shown."/>
-    <CtaMetricCard label="Backup Options CTR" cta="backup_options" metrics={data.cta_metrics||{}} sub="Clicks on Backup Options after the option was shown."/>
+    <CtaMetricCard label="Plan My Journey rate" cta="plan_my_journey" metrics={data.cta_metrics||{}} sub="Sessions that used Plan My Journey after reaching the home page."/>
+    <CtaMetricCard label="Search Connections rate" cta="search_connections" metrics={data.cta_metrics||{}} sub="Sessions that searched after reaching the search page."/>
+    <CtaMetricCard label="Compare Journeys rate" cta="compare_journeys" metrics={data.cta_metrics||{}} sub="Sessions that compared after reaching search results."/>
+    <CtaMetricCard label="Backup Options rate" cta="backup_options" metrics={data.cta_metrics||{}} sub="Sessions that opened backup options from a journey."/>
     <MetricCard label="Search completion rate" value={`${m.search_completion_rate||0}%`} sub="Completed searches as a share of started searches."/>
     <MetricCard label="Results reached rate" value={`${m.results_reach_rate||0}%`} sub="Sessions reaching results as a share of completed searches."/>
    </div>
