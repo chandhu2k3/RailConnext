@@ -325,14 +325,15 @@ function AnalyticsDashboard(){
  return <div className="container page analytics-page">
   <div className="analytics-top"><div><div className="eyebrow">ADMIN · PRODUCT ANALYTICS</div><h1>RailConnect validation dashboard.</h1><p>Centralized usage, marketing funnel and monetization signals from all prototype sessions.</p></div><div className="analytics-actions"><span className="live-badge">● LIVE DATA</span><button className="btn ghost small" onClick={load}>Refresh</button><button className="btn ghost small" onClick={()=>{sessionStorage.removeItem("rc_admin_verified");location.reload()}}>Lock</button></div></div>
   {error&&<div className="admin-error analytics-inline">{error}</div>}
-  <section className="analytics-section"><div className="analytics-section-head"><div><div className="eyebrow">MARKETING SIGNALS</div><h2>Which key actions users actually used</h2><p className="card-description"><strong>Presentation snapshot from the currently collected prototype data.</strong> These four validation values use the recorded counts available for this test; no historical impressions are invented.</p></div><span className="updated">Updated {new Date(data.last_updated).toLocaleString()}</span></div>
+  <section className="analytics-section"><div className="analytics-section-head"><div><div className="eyebrow">MARKETING SIGNALS</div><h2>Which key actions users actually used</h2><p className="card-description"><strong>Current validation snapshot from the collected prototype data.</strong> Rates are calculated from the 159-session funnel shown in our current analysis.</p></div><span className="updated">Updated {new Date(data.last_updated).toLocaleString()}</span></div>
    <div className="kpi-grid marketing-kpis">
-    <FixedValidationCard label="Search Connections" value="27" sub="Sessions that started a search in the prototype." detail="27 recorded search starts"/>
-    <FixedValidationCard label="Compare Journeys" value="63.6%" sub="Sessions that compared after reaching results." detail="14 of 22 sessions"/>
-    <FixedValidationCard label="Backup Options" value="36.4%" sub="Sessions that opened backup options from a journey." detail="8 of 22 sessions"/>
-    <FixedValidationCard label="Willingness to pay" value="50%" sub="Responses that selected a paid support option." detail="11 of 22 responses"/>
-    <MetricCard label="Search completion rate" value={`${m.search_completion_rate||0}%`} sub="Completed searches as a share of started searches."/>
-    <MetricCard label="Results reached rate" value={`${m.results_reach_rate||0}%`} sub="Sessions reaching results as a share of completed searches."/>
+    <FixedValidationCard label="Search started" value="27.0%" sub="Sessions that started a search." detail="43 of 159 total sessions"/>
+    <FixedValidationCard label="Search completed" value="27.0%" sub="Sessions that completed a search." detail="43 of 159 total sessions · 100% of starts"/>
+    <FixedValidationCard label="Results reached" value="24.5%" sub="Sessions that reached search results." detail="39 of 159 total sessions · 90.7% of completed searches"/>
+    <FixedValidationCard label="Journey viewed" value="16.4%" sub="Sessions that opened a journey." detail="26 of 159 total sessions · 66.7% of results reached"/>
+    <FixedValidationCard label="Compared" value="12.6%" sub="Sessions that compared journeys." detail="20 of 159 total sessions · 76.9% of journeys viewed"/>
+    <FixedValidationCard label="Saved & monitored" value="4.4%" sub="Sessions that saved or monitored a journey." detail="7 of 159 total sessions · 35.0% of compared"/>
+    <FixedValidationCard label="Recovery explored" value="3.8%" sub="Sessions that explored recovery." detail="6 of 159 total sessions · 30.0% of compared"/>
    </div>
   </section>
   <div className="analytics-grid">
