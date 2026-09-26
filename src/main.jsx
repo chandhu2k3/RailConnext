@@ -84,6 +84,13 @@ function trackEvent(name,props={}){
     keepalive:true
   }).catch(()=>{});
 }
+function trackCtaExposure(cta){
+  const key=`rc_cta_exposed_${cta}_${window.location.pathname}`;
+  if(sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key,"1");
+  trackEvent("cta_exposed",{cta});
+}
+
 function sessionStart(){
   if(!sessionStorage.getItem("rc_session_started")){
     getSessionId(); sessionStorage.setItem("rc_session_started","1"); trackEvent("session_started");
@@ -99,6 +106,11 @@ async function verifyAdminPassword(password){
 async function fetchAnalytics(){
   const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_railconnect_analytics`,{method:"POST",headers:supabaseHeaders,body:"{}"});
   if(!r.ok) throw new Error("Unable to load analytics.");
+  return r.json();
+}
+async function fetchCtaMetrics(){
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_railconnect_cta_metrics`,{method:"POST",headers:supabaseHeaders,body:"{}"});
+  if(!r.ok) return {};
   return r.json();
 }
 
@@ -125,6 +137,7 @@ function RiskBadge({risk}){return <span className={"risk "+risk.toLowerCase()}>{
 
 function Landing(){
  const nav=useNavigate();
+ useEffect(()=>{trackCtaExposure("plan_my_journey")},[]);
  return <div className="landing">
   <section className="hero container">
    <div className="hero-copy">
@@ -154,8 +167,9 @@ function Landing(){
 
 function Search(){
  const nav=useNavigate(), params=new URLSearchParams(useLocation().search);
+ useEffect(()=>{trackCtaExposure("search_connections")},[]);
  const [from,setFrom]=useState(params.get("demo")?"Hyderabad":params.get("from")||""), [to,setTo]=useState(params.get("demo")?"Kochi":params.get("to")||""), [date,setDate]=useState("2026-09-25"), [connections,setConnections]=useState("1"), [travellers,setTravellers]=useState("1");
- const submit=(e)=>{e.preventDefault(); if(!from||!to)return; trackEvent("search_started",{origin:from,destination:to});trackEvent("search_completed",{origin:from,destination:to,date,number_of_connections:connections});nav(`/results?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)};
+ const submit=(e)=>{e.preventDefault(); if(!from||!to)return; trackEvent("cta_clicked",{cta:"search_connections"}); trackEvent("search_started",{origin:from,destination:to});trackEvent("search_completed",{origin:from,destination:to,date,number_of_connections:connections});nav(`/results?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)};
  return <div className="container page"><div className="page-intro"><div><div className="eyebrow">JOURNEY SEARCH</div><h1>Build the connection.</h1><p>Choose a route from our demo network and explore the connecting journey options.</p></div><span className="demo-note">Demo network · No live availability</span></div>
  <form className="search-panel" onSubmit={submit}>
   <label>From<div className="input-wrap"><span>⌖</span><select value={from} onChange={e=>{setFrom(e.target.value);trackEvent("origin_selected",{origin:e.target.value})}}><option value="">Choose origin</option>{originStations.map(s=><option key={s}>{s}</option>)}</select></div></label>
@@ -177,12 +191,13 @@ function Results(){
  const routeJourneys=journeys.filter(j=>j.origin===from&&j.destination===to);
  const list=useMemo(()=>{let x=[...routeJourneys]; if(filter!=="ALL")x=x.filter(j=>j.risk===filter); if(sort==="duration")x.sort((a,b)=>a.duration.localeCompare(b.duration)); if(sort==="cost")x.sort((a,b)=>a.cost-b.cost); if(sort==="buffer")x.sort((a,b)=>b.buffer-a.buffer); if(sort==="arrival")x.sort((a,b)=>a.legs.at(-1).arr.localeCompare(b.legs.at(-1).arr)); return x},[routeJourneys,sort,filter]);
  useEffect(()=>{trackEvent("results_viewed",{origin:from,destination:to,result_count:routeJourneys.length})},[from,to,routeJourneys.length]);
+ useEffect(()=>{if(selected.length>0) trackCtaExposure("compare_journeys")},[selected.length]);
  const toggle=(id)=>{setSelected(s=>s.includes(id)?s.filter(x=>x!==id):s.length<3?[...s,id]:s);trackEvent("journey_compared",{journey_ids:[...selected,id].slice(0,3),number_of_options:Math.min(3,new Set([...selected,id]).size)})};
  return <div className="container page"><div className="page-intro"><div><div className="eyebrow">CONNECTION RESULTS</div><h1>{from} <span className="muted">→</span> {to}</h1><p>{routeJourneys.length} demo connection {routeJourneys.length===1?"option":"options"} · Prototype estimates · 25 Sep 2026</p></div><button className="btn ghost small" onClick={()=>nav("/search")}>Edit search</button></div>
  <div className="result-toolbar"><div className="filters"><button className={filter==="ALL"?"selected":""} onClick={()=>{setFilter("ALL");trackEvent("connection_filter_used",{filter:"ALL"})}}>All</button>{["LOW","MODERATE","HIGH"].map(f=><button className={filter===f?"selected":""} key={f} onClick={()=>{setFilter(f);trackEvent("connection_filter_used",{filter:f})}}>{f}</button>)}</div><label>Sort <select value={sort} onChange={e=>{setSort(e.target.value);trackEvent("connection_sorted",{sort:e.target.value})}}><option value="risk">Lowest risk</option><option value="duration">Shortest journey</option><option value="cost">Lowest cost</option><option value="buffer">Best connection</option><option value="arrival">Earliest arrival</option></select></label></div>
  <div className="prototype-disclaimer"><b>Connection Risk — Prototype Estimate</b><span>Uses mock buffer, reliability and transfer factors. It is not a live railway prediction.</span></div>
  {list.length===0?<div className="empty-state"><div className="eyebrow">LIMITED DEMO COVERAGE</div><h2>No connection options for this route yet.</h2><p>RailConnect currently covers a small set of demo routes. Try another combination from the Plan page.</p><button className="btn primary" onClick={()=>nav("/search")}>Choose another route →</button></div>:<div className="results-list">{list.map(j=><JourneyCard key={j.id} j={j} checked={selected.includes(j.id)} onCompare={()=>toggle(j.id)} onOpen={()=>{trackEvent("journey_opened",{journey_id:j.id,risk_level:j.risk,connection_buffer:j.buffer,total_duration:j.duration,estimated_cost:j.cost});nav("/journey/"+j.id)}}/>)}</div>}
- {selected.length>0 && <div className="compare-dock"><span>{selected.length}/3 selected for comparison</span><button className="btn primary" disabled={selected.length<2} onClick={()=>nav("/compare?ids="+selected.join(","))}>Compare journeys →</button></div>}
+ {selected.length>0 && <div className="compare-dock"><span>{selected.length}/3 selected for comparison</span><button className="btn primary" disabled={selected.length<2} onClick={()=>{trackEvent("cta_clicked",{cta:"compare_journeys",selected_count:selected.length});nav("/compare?ids="+selected.join(","))}}>Compare journeys →</button></div>}
  </div>
 }
 
@@ -200,6 +215,7 @@ function JourneyCard({j,checked,onCompare,onOpen}){
 function JourneyDetails(){
  const {id}=useParams(), nav=useNavigate(), j=journeys.find(x=>x.id===id)||journeys[0];
  const [support,setSupport]=useState("basic"), [wtp,setWtp]=useState(null), [purchaseIntent,setPurchaseIntent]=useState(null), [bookingConfirmed,setBookingConfirmed]=useState(false), [riskAcknowledged,setRiskAcknowledged]=useState(false);
+ useEffect(()=>{trackCtaExposure("backup_options")},[]);
  const supportOptions=[
   {id:"free",price:0,name:"Monitor + backup options",desc:"See delays, connection risk and alternative onward options at no cost.",best:"Free for every traveller — you choose what to do",features:["Delay status","Connection risk & buffer updates","Backup / alternative options","Journey monitoring"]},
   {id:"basic",price:49,name:"Secure my next leg",desc:"Get help securing an onward option before a connection becomes a problem.",best:"For travellers who want the next leg taken care of",features:["Everything in Free","Onward option selection help","Booking / reconfirmation guidance","Next-leg support"]},
@@ -233,7 +249,7 @@ function JourneyDetails(){
   {bookingConfirmed&&<div className="booking-confirmed"><div><span>✓</span><div><b>Booking flow started</b><p>This prototype has recorded the journey, support choice and purchase-intent response. No payment or real ticket booking was made.</p></div></div><button className="btn dark small" onClick={save}>Save & Monitor Journey</button></div>}
  </section>
 
- <section className="backup-section"><div className="section-head compact"><div><div className="eyebrow">FREE FOR EVERYONE</div><h2>See backup options before you book.</h2></div><p>Explore alternative trains and routes now. If you want RailConnect to help secure the onward journey, choose a paid support tier above.</p></div><button className="btn dark" onClick={()=>{trackEvent("backup_options_clicked",{journey_id:j.id});nav("/my-journey?backup=1")}}>Show Free Backup Options →</button></section>
+ <section className="backup-section"><div className="section-head compact"><div><div className="eyebrow">FREE FOR EVERYONE</div><h2>See backup options before you book.</h2></div><p>Explore alternative trains and routes now. If you want RailConnect to help secure the onward journey, choose a paid support tier above.</p></div><button className="btn dark" onClick={()=>{trackEvent("cta_clicked",{cta:"backup_options",journey_id:j.id});trackEvent("backup_options_clicked",{journey_id:j.id});nav("/my-journey?backup=1")}}>Show Free Backup Options →</button></section>
  </div>
 }
 
@@ -290,9 +306,14 @@ function AdminLogin({onSuccess}){
 
 function MetricCard({label,value,sub,accent=false}){return <div className={"kpi "+(accent?"accent":"")}><span>{label}</span><strong>{value}</strong>{sub&&<small>{sub}</small>}</div>}
 
+function CtaMetricCard({label,cta,metrics,sub}){
+ const x=metrics?.[cta]||{};
+ return <div className="kpi accent"><span>{label}</span><strong>{Number(x.ctr||0)}%</strong><small>{sub} <br/><b>{Number(x.clicks||0)} clicks / {Number(x.impressions||0)} impressions</b></small></div>;
+}
+
 function AnalyticsDashboard(){
  const [data,setData]=useState(null),[error,setError]=useState(""),[loading,setLoading]=useState(true);
- const load=async()=>{try{setError("");setData(await fetchAnalytics())}catch(e){setError(e.message||"Unable to load analytics.")}finally{setLoading(false)}};
+ const load=async()=>{try{setError("");const [analytics,ctaMetrics]=await Promise.all([fetchAnalytics(),fetchCtaMetrics()]);setData({...analytics,cta_metrics:ctaMetrics})}catch(e){setError(e.message||"Unable to load analytics.")}finally{setLoading(false)}};
  useEffect(()=>{load();const t=setInterval(load,15000);return()=>clearInterval(t)},[]);
  if(loading&&!data)return <div className="container page analytics-page"><div className="loading-card">Loading centralized analytics…</div></div>;
  if(error&&!data)return <div className="container page analytics-page"><div className="admin-error">{error}</div><button className="btn primary" onClick={load}>Retry</button></div>;
@@ -305,12 +326,19 @@ function AnalyticsDashboard(){
  return <div className="container page analytics-page">
   <div className="analytics-top"><div><div className="eyebrow">ADMIN · PRODUCT ANALYTICS</div><h1>RailConnect validation dashboard.</h1><p>Centralized usage, marketing funnel and monetization signals from all prototype sessions.</p></div><div className="analytics-actions"><span className="live-badge">● LIVE DATA</span><button className="btn ghost small" onClick={load}>Refresh</button><button className="btn ghost small" onClick={()=>{sessionStorage.removeItem("rc_admin_verified");location.reload()}}>Lock</button></div></div>
   {error&&<div className="admin-error analytics-inline">{error}</div>}
-  <section className="analytics-section"><div className="analytics-section-head"><div><div className="eyebrow">MARKETING SIGNALS</div><h2>How people discover and use RailConnect</h2></div><span className="updated">Updated {new Date(data.last_updated).toLocaleString()}</span></div>
-   <div className="kpi-grid marketing-kpis"><MetricCard label="Feature visibility" value={m.exposure_users||0} sub="Unique sessions that saw a tracked RailConnect feature entry point."/><MetricCard label="Feature click rate" value={`${m.ctr||0}%`} sub="Share of exposed sessions that clicked a tracked feature CTA." accent/><MetricCard label="Search completion rate" value={`${m.search_completion_rate||0}%`} sub="Share of started searches that reached a completed search."/><MetricCard label="Results reached rate" value={`${m.results_reach_rate||0}%`} sub="Share of completed searches that reached the results page."/><MetricCard label="Search start rate" value={`${m.search_start_rate||0}%`} sub="Share of tracked exposed sessions that started a search."/><MetricCard label="After-click drop-off" value={`${m.post_click_dropoff_rate||0}%`} sub={`${m.post_click_dropoff_users||0} tracked CTA clickers did not start a search.`}/></div>
+  <section className="analytics-section"><div className="analytics-section-head"><div><div className="eyebrow">MARKETING SIGNALS</div><h2>How key actions attract engagement</h2><p className="card-description"><strong>CTR is calculated separately for each CTA as total clicks ÷ total impressions × 100.</strong> Each CTA has its own impression and click count, so the rates are not mixed together.</p></div><span className="updated">Updated {new Date(data.last_updated).toLocaleString()}</span></div>
+   <div className="kpi-grid marketing-kpis">
+    <CtaMetricCard label="Plan My Journey CTR" cta="plan_my_journey" metrics={data.cta_metrics||{}} sub="Clicks on Plan My Journey after it was shown."/>
+    <CtaMetricCard label="Search Connections CTR" cta="search_connections" metrics={data.cta_metrics||{}} sub="Clicks on Find Connections after it was shown."/>
+    <CtaMetricCard label="Compare Journeys CTR" cta="compare_journeys" metrics={data.cta_metrics||{}} sub="Clicks on Compare Journeys after the comparison CTA was shown."/>
+    <CtaMetricCard label="Backup Options CTR" cta="backup_options" metrics={data.cta_metrics||{}} sub="Clicks on Backup Options after the option was shown."/>
+    <MetricCard label="Search completion rate" value={`${m.search_completion_rate||0}%`} sub="Completed searches as a share of started searches."/>
+    <MetricCard label="Results reached rate" value={`${m.results_reach_rate||0}%`} sub="Sessions reaching results as a share of completed searches."/>
+   </div>
   </section>
   <div className="analytics-grid">
    <section className="chart-card"><div className="card-heading"><div><span className="eyebrow">MARKETING FUNNEL</span><h2>How people move through the journey</h2></div></div><div className="funnel">{funnel.map(x=><div className="funnel-row" key={x[0]}><span>{x[0]}</span><div><i style={{width:(x[1]/max*100)+"%"}}></i></div><b>{x[1]}</b></div>)}</div></section>
-   <section className="chart-card"><div className="card-heading"><div><span className="eyebrow">FEATURE ENGAGEMENT</span><h2>Which features people use</h2></div></div><div className="bars">{features.map(x=><div className="bar-row" key={x[0]}><span>{x[0]}</span><div><i style={{width:Math.min(100,x[1]*18+2)+"%"}}></i></div><b>{x[1]}</b></div>)}</div></section>
+   <section className="chart-card"><div className="card-heading"><div><span className="eyebrow">FEATURE ENGAGEMENT</span><h2>Which features people use</h2></div></div><div className="bars">{features.map(x=><div className="bar-row" key={x[0]}><span>{x[0]}</span><div><i style={{width:Math.max(0,Math.min(100,(x[1]/Math.max(...features.map(f=>f[1]),1))*100))+"%"}}></i></div><b>{x[1]}</b></div>)}</div></section>
   </div>
   <div className="analytics-grid">
    <section className="chart-card"><div className="card-heading"><div><span className="eyebrow">ACQUISITION</span><h2>Where visitors come from</h2></div><b>{data.sessions||0} sessions</b></div><div className="source-list">{(data.sources||[]).map(x=><div key={x.source}><span>{x.source}</span><b>{x.sessions}</b></div>)}</div></section>
