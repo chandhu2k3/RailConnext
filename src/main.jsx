@@ -336,14 +336,14 @@ function AnalyticsDashboard(){
     <FixedValidationCard label="Recovery explored" value="3.8%" sub="Sessions that explored recovery." detail="6 of 159 total sessions · 30.0% of compared"/>
    </div>
   </section>
-  <div className="analytics-grid">
+  <div className="analytics-grid analytics-top-pair">
    <section className="chart-card"><div className="card-heading"><div><span className="eyebrow">MARKETING FUNNEL</span><h2>How people move through the journey</h2></div></div><div className="funnel">{funnel.map(x=><div className="funnel-row" key={x[0]}><span>{x[0]}</span><div><i style={{width:(x[1]/max*100)+"%"}}></i></div><b>{x[1]}</b></div>)}</div></section>
+   <section className="chart-card"><div className="card-heading"><div><span className="eyebrow">FEATURE ENGAGEMENT</span><h2>Which features people use</h2></div></div><div className="bars">{features.map(x=><div className="bar-row" key={x[0]}><span>{x[0]}</span><div><i style={{width:Math.max(0,Math.min(100,(x[1]/Math.max(...features.map(f=>f[1]),1))*100))+"%"}}></i></div><b>{x[1]}</b></div>)}</div></section>
+  </div>
+  <div className="analytics-grid analytics-full-row">
    <section className="chart-card funnel-insights"><div className="card-heading"><div><span className="eyebrow">FUNNEL ANALYSIS</span><h2>How users progress at each step</h2><p className="card-description">Each percentage shows the share of users who moved from the previous step to the next.</p></div></div>
     <div className="funnel-analysis-list">{funnelRates.slice(1).map(x=><div className="funnel-analysis-row" key={x.label}><div className="funnel-analysis-head"><span>{x.label}</span><b>{x.rate.toFixed(1)}%</b></div><div className="analysis-track"><i style={{width:Math.max(0,Math.min(100,x.rate))+"%"}}></i></div><small>{x.count} users continued from {funnel[funnel.findIndex(f=>f[0]===x.label)-1][0].toLowerCase()}</small></div>)}</div>
    </section>
-  </div>
-  <div className="analytics-grid">
-   <section className="chart-card"><div className="card-heading"><div><span className="eyebrow">FEATURE ENGAGEMENT</span><h2>Which features people use</h2></div></div><div className="bars">{features.map(x=><div className="bar-row" key={x[0]}><span>{x[0]}</span><div><i style={{width:Math.max(0,Math.min(100,(x[1]/Math.max(...features.map(f=>f[1]),1))*100))+"%"}}></i></div><b>{x[1]}</b></div>)}</div></section>
   </div>
   <div className="analytics-grid">
    <section className="chart-card"><div className="card-heading"><div><span className="eyebrow">ACQUISITION</span><h2>Where visitors come from</h2></div><b>{data.sessions||0} sessions</b></div><div className="source-list">{(data.sources||[]).map(x=><div key={x.source}><span>{x.source}</span><b>{x.sessions}</b></div>)}</div></section>

@@ -77,3 +77,13 @@
 .analytics-page .analytics-grid > .chart-card .mini-metrics,
 .analytics-page .analytics-grid > .chart-card .price-bars{flex:1;}
 .analytics-page .analytics-grid > .chart-card .card-heading{flex-shrink:0;}
+
+/* Final analytics layout: funnel + feature engagement side-by-side; funnel analysis full-width. */
+.analytics-page .analytics-top-pair > .chart-card,
+.analytics-page .analytics-full-row > .chart-card { min-width: 0; }
+.analytics-page .analytics-full-row { grid-template-columns: minmax(0, 1fr); }
+.analytics-page .analytics-full-row > .chart-card { width: 100%; }
+.analytics-page .analytics-top-pair > .chart-card { height: 100%; }
+@media(max-width:900px){
+  .analytics-page .analytics-full-row { grid-template-columns: 1fr; }
+}
