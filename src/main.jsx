@@ -317,8 +317,9 @@ function AnalyticsDashboard(){
  if(loading&&!data)return <div className="container page analytics-page"><div className="loading-card">Loading centralized analytics…</div></div>;
  if(error&&!data)return <div className="container page analytics-page"><div className="admin-error">{error}</div><button className="btn primary" onClick={load}>Retry</button></div>;
  const m=data.marketing||{},ev=data.events||{}, unique=n=>ev[n]?.unique_sessions||0;
- const funnel=[["Feature visibility",m.exposure_users||0],["Search started",m.search_starters||0],["Search completed",m.search_completers||0],["Results reached",m.results_reachers||0],["Journey viewed",unique("journey_opened")],["Compared",unique("journey_compared")],["Saved & monitored",unique("journey_saved")],["Recovery explored",unique("recovery_options_viewed")]];
+ const funnel=[["Search started",43],["Search completed",43],["Results reached",39],["Journey viewed",26],["Compared",20],["Saved & monitored",7],["Recovery explored",6]];
  const max=Math.max(...funnel.map(x=>x[1]),1);
+ const funnelRates=funnel.map((x,i)=>({label:x[0],count:x[1],rate:i===0?null:(x[1]/funnel[i-1][1])*100}));
  const features=[["Compare",unique("journey_compared")],["Save & monitor",unique("journey_saved")],["Risk details",unique("risk_details_viewed")],["Backup options",unique("backup_options_clicked")],["Delay simulation",unique("delay_simulation_started")],["Recovery",unique("recovery_options_viewed")],["WTP",unique("wtp_amount_selected")||unique("willingness_to_pay")]];
  const wtpRows=data.wtp||[], wtpTotal=wtpRows.reduce((sum,x)=>sum+(Number(x.responses)||0),0), paidWtp=wtpRows.filter(x=>Number(x.price)>0).reduce((sum,x)=>sum+(Number(x.responses)||0),0);
  const compareUsers=unique("journey_compared"), paidRate=wtpTotal?((paidWtp/wtpTotal)*100):0;
@@ -328,7 +329,6 @@ function AnalyticsDashboard(){
   <section className="analytics-section"><div className="analytics-section-head"><div><div className="eyebrow">MARKETING SIGNALS</div><h2>Which key actions users actually used</h2><p className="card-description"><strong>Current validation snapshot from the collected prototype data.</strong> Rates are calculated from the 159-session funnel shown in our current analysis.</p></div><span className="updated">Updated {new Date(data.last_updated).toLocaleString()}</span></div>
    <div className="kpi-grid marketing-kpis">
     <FixedValidationCard label="Search started" value="27.0%" sub="Sessions that started a search." detail="43 of 159 total sessions"/>
-    <FixedValidationCard label="Search completed" value="27.0%" sub="Sessions that completed a search." detail="43 of 159 total sessions · 100% of starts"/>
     <FixedValidationCard label="Results reached" value="24.5%" sub="Sessions that reached search results." detail="39 of 159 total sessions · 90.7% of completed searches"/>
     <FixedValidationCard label="Journey viewed" value="16.4%" sub="Sessions that opened a journey." detail="26 of 159 total sessions · 66.7% of results reached"/>
     <FixedValidationCard label="Compared" value="12.6%" sub="Sessions that compared journeys." detail="20 of 159 total sessions · 76.9% of journeys viewed"/>
@@ -338,6 +338,11 @@ function AnalyticsDashboard(){
   </section>
   <div className="analytics-grid">
    <section className="chart-card"><div className="card-heading"><div><span className="eyebrow">MARKETING FUNNEL</span><h2>How people move through the journey</h2></div></div><div className="funnel">{funnel.map(x=><div className="funnel-row" key={x[0]}><span>{x[0]}</span><div><i style={{width:(x[1]/max*100)+"%"}}></i></div><b>{x[1]}</b></div>)}</div></section>
+   <section className="chart-card funnel-insights"><div className="card-heading"><div><span className="eyebrow">FUNNEL ANALYSIS</span><h2>How users progress at each step</h2><p className="card-description">Each percentage shows the share of users who moved from the previous step to the next.</p></div></div>
+    <div className="funnel-analysis-list">{funnelRates.slice(1).map(x=><div className="funnel-analysis-row" key={x.label}><div className="funnel-analysis-head"><span>{x.label}</span><b>{x.rate.toFixed(1)}%</b></div><div className="analysis-track"><i style={{width:Math.max(0,Math.min(100,x.rate))+"%"}}></i></div><small>{x.count} users continued from {funnel[funnel.findIndex(f=>f[0]===x.label)-1][0].toLowerCase()}</small></div>)}</div>
+   </section>
+  </div>
+  <div className="analytics-grid">
    <section className="chart-card"><div className="card-heading"><div><span className="eyebrow">FEATURE ENGAGEMENT</span><h2>Which features people use</h2></div></div><div className="bars">{features.map(x=><div className="bar-row" key={x[0]}><span>{x[0]}</span><div><i style={{width:Math.max(0,Math.min(100,(x[1]/Math.max(...features.map(f=>f[1]),1))*100))+"%"}}></i></div><b>{x[1]}</b></div>)}</div></section>
   </div>
   <div className="analytics-grid">

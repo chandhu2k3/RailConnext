@@ -54,3 +54,7 @@
 .marketing-kpis .kpi small b{font-weight:800;color:#3a4541;}
 @media(max-width:1100px){.marketing-kpis{grid-template-columns:repeat(3,minmax(0,1fr));}}
 @media(max-width:650px){.marketing-kpis{grid-template-columns:1fr 1fr;}}
+
+/* Funnel analysis insight panel */
+.funnel-insights{background:#fffefa}.funnel-insights .card-heading{margin-bottom:8px}.insight-card{border-top:1px solid var(--line);padding:13px 0}.insight-label{font-size:8px;letter-spacing:.12em;font-weight:800;color:#8b6551}.insight-card h3{font-family:Manrope;font-size:14px;margin:5px 0}.insight-card p{font-size:10px;color:#69746f;line-height:1.55;margin:0}.funnel-takeaway{margin-top:7px;background:#e6ebe4;border-radius:10px;padding:11px 12px;display:flex;gap:9px;align-items:flex-start;font-size:10px;line-height:1.45}.funnel-takeaway b{font-family:Manrope;white-space:nowrap}.funnel-takeaway span{color:#5f6b66}
+.funnel-analysis-list{display:flex;flex-direction:column;gap:16px;margin-top:8px}.funnel-analysis-row{padding:2px 0}.funnel-analysis-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700}.funnel-analysis-head b{font-family:Manrope;font-size:13px}.analysis-track{height:10px;background:#eceee9;border-radius:8px;overflow:hidden;margin:7px 0 5px}.analysis-track i{display:block;height:100%;background:#647a70;border-radius:8px;transition:.4s}.funnel-analysis-row small{font-size:9px;color:#7a8580}
