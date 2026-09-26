@@ -1,19 +1,19 @@
-# RailConnect v15 — Eligible-session CTA analytics
+# RailConnect v16 — Eligible-session CTA analytics
 
-This version changes only the CTA analytics calculation and explanatory copy.
+The dashboard uses only existing analytics_events data. It does not create historical impressions or modify/delete stored events.
 
 ## CTA engagement rates
-Each CTA rate is calculated dynamically as:
+Each rate is calculated dynamically as:
 
-unique sessions that used the CTA / unique eligible sessions × 100
+**unique sessions that used the action / unique eligible sessions × 100**
 
-Eligible sessions are based on the existing event stream:
-- Plan My Journey: sessions with a home-page (`/`) page view.
-- Search Connections: sessions with a search-page (`/search`) page view.
-- Compare Journeys: sessions that reached `results_viewed`.
-- Backup Options: sessions that reached `journey_opened`.
+Existing event mappings:
+- Plan My Journey: `cta_clicked` with `props.cta = plan_my_journey`; eligible sessions = home page (`page_view`, `/`).
+- Search Connections: `cta_clicked` with `props.cta = search_connections`; eligible sessions = search page (`page_view`, `/search`).
+- Compare Journeys: `journey_compared`; eligible sessions = sessions reaching `results_viewed`.
+- Backup Options: `backup_options_clicked`; eligible sessions = sessions with `journey_opened`.
 
-No historical impressions are fabricated, and no analytics event rows are updated or deleted.
+This means existing data such as 14 comparison sessions and 22 results sessions will be calculated as 14/22 = 63.64% when those records are present in Supabase.
 
-## Supabase
-Run `railconnect_cta_metrics_v15.sql` in the Supabase SQL Editor once. It replaces only the read-only CTA aggregation function.
+## Important deployment step
+Run `railconnect_cta_metrics_v16.sql` in the Supabase SQL Editor once. The frontend expects the returned `eligible_sessions` field. If the older CTA function is still installed, the UI can show `0 / 0 eligible sessions` even though the underlying analytics events exist.
