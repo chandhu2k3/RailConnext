@@ -87,3 +87,31 @@
 @media(max-width:900px){
   .analytics-page .analytics-full-row { grid-template-columns: 1fr; }
 }
+
+/* Final analytics natural-height cards: prevent short content blocks from stretching to match a taller neighbor. */
+.analytics-page .analytics-grid > .chart-card {
+  height:auto;
+  min-height:0;
+  display:block;
+}
+.analytics-page .analytics-grid > .chart-card .funnel,
+.analytics-page .analytics-grid > .chart-card .funnel-analysis-list,
+.analytics-page .analytics-grid > .chart-card .bars,
+.analytics-page .analytics-grid > .chart-card .source-list,
+.analytics-page .analytics-grid > .chart-card .mini-metrics,
+.analytics-page .analytics-grid > .chart-card .price-bars {
+  flex:none;
+}
+.analytics-page .analytics-top-pair > .chart-card {
+  height:auto;
+}
+.analytics-page .analytics-grid {
+  align-items:start;
+}
+.analytics-page .engagement-metrics {
+  align-items:start;
+}
+.analytics-page .engagement-metrics > div {
+  min-height:92px;
+  height:auto;
+}
